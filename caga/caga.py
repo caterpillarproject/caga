@@ -18,6 +18,7 @@ ix_halo_ID, ix_age, ix_z, ix_t_merge, ix_ID_merge, ix_m_halo, ix_r_vir, \
 
 def load_gamma_tree(path):
     """ Load a gamma tree (from a .npy save) """
+    assert path.endswith(".npy")
     gtree = np.load(path, encoding='latin1')
     assert len(all_ixs) == len(gtree)
     return gtree
