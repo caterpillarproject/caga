@@ -12,7 +12,7 @@ def mass_history(gamtree):
     """
     br_halo_ID, br_age, br_z, br_t_merge, br_ID_merge, \
     br_m_halo, br_r_vir, br_is_prim, redshifts, times, \
-        tree_trunk_ID = gamtree
+        tree_trunk_ID = *gamtree.all_vars
     nb_redshifts = len(redshifts)
     
     # Set the virial mass threshold above which halos are allowed to form stars.
