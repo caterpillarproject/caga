@@ -6,6 +6,7 @@ Modules for using Caterpillar-GAMMA data
 
 import numpy as np
 import itertools
+from scipy import interpolate, optimize
 
 from NuPyCEE import omega, sygma, stellab
 from JINAPyCEE import gamma, omega_plus
@@ -201,11 +202,33 @@ def convolve_gauss(x, y, sigma_gauss):
     y_gauss_norm = normalize_distribution(x,y_gauss)
     return y_gauss_norm
 
+def get_cdf(x,y, return_arrays=False, **kwargs):
+    """
+    Compute cumulative distribution function and return interpolating function
+    Assumes x is left bin edge!!!
+    """
+    assert len(x) == len(y)
+    assert np.all(np.diff(x) > 0), np.diff(x)
+    ycum = np.array([0]+list(y.cumsum()))
+    ycum = ycum/ycum[-1]
+    dx = np.max(np.diff(x))
+    xcum = np.array(list(x)+[x[-1]+dx])
+    cdf = interpolate.interp1d(xcum, ycum, assume_sorted=True, **kwargs)
+    if return_arrays:
+        return cdf, xcum, ycum
+    return cdf
+    
 def find_distribution_percentile(x,y,p):
     """
-    Given a PDF x,y find the CDF and linearly interpolate to find where the percentile is p
+    Given a PDF x,y find the CDF and linearly interpolate to find where the percentile is p.
+    Requires x to be sorted in increasing order with no duplicates.
     """
-    ycum = y.cumsum()
-    raise NotImplementedError
+    p = np.ravel(p)
+    assert np.all(np.logical_and(p >= 0, p <= 1))
+    cdf, xcum, ycum = get_cdf(x,y,return_arrays=True)
+    p_guess = [xcum[np.argmin(np.abs(ycum-p_))] for p_ in p]
+    output = [optimize.brentq(lambda x: cdf(x)-p_, xcum[0], xcum[-1], xtol=1e-4) for p_ in p]
+    return np.array(output)
+    
 def find_distribution_median(x,y):
     return find_distribution_percentile(x,y,0.5)

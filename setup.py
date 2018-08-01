@@ -39,5 +39,6 @@ setup(
     packages=find_packages(exclude=["documents", "tests"]),
     install_requires=[
         "numpy",
+        "scipy",
         ],
 )
