@@ -10,7 +10,7 @@ import itertools
 from NuPyCEE import omega, sygma, stellab
 from JINAPyCEE import gamma, omega_plus
 
-from . import plot
+from . import plot, calc
 
 
 #### Define some element information
@@ -44,6 +44,19 @@ mn_norm = [1.0000200000000001, 3.999834, 6.924099999999999, 9.0, 10.801,
            195.11347999999998, 197.0, 200.6297, 204.40952, 207.34285, 209.0,
            232.0, 237.27134]
 el_to_mass = dict(zip(el_norm, mn_norm))
+
+def mass_to_spectro(M1,M2,e1,e2):
+    """
+    Given two masses M1, M2 and elements e1, e2,
+    return compute [e1/e2]
+    """
+    assert (e1 in el_to_mass) and (e2 in el_to_mass), (e1, e2)
+    assert (e1 in el_to_solar) and (e2 in el_to_solar), (e1, e2)
+    N1 = M1/el_to_mass[e1]
+    N2 = M2/el_to_mass[e2]
+    sol1 = el_to_solar[e1]
+    sol2 = el_to_solar[e2]
+    return np.log10(N1) - np.log10(N2) - sol1 + sol2
 
 class gamma_tree(object):
     """
@@ -145,180 +158,54 @@ def generate_kwargs(gt, m_vir_thresh):
                    "SSPs_in":SSPs_in})
     return kwargs
 
-def get_root_Mstar(g):
-    """
-    """
-def get_root_ZH(g):
-    """
-    """
-def get_root_FeH(g):
-    """
-    """
-def get_root_FeH_distr(g):
-    """
-    """
-def get_root_Mpeak(g):
-    """
-    """
-
 def plot_lumfn(Mstars,MoverL=2.0):
+    """
+    Not implemented properly
+    """
     logLbins = np.arange(1,12,.2)
     logLs = np.log10(Mstars/MoverL)
     h,x = np.histogram(logLs, logLbins)
+    raise NotImplementedError
     
-def mass_to_spectro(M1,M2,e1,e2):
-    """
-    Given two masses M1, M2 and elements e1, e2,
-    return compute [e1/e2]
-    """
-    assert (e1 in el_to_mass) and (e2 in el_to_mass), (e1, e2)
-    assert (e1 in el_to_solar) and (e2 in el_to_solar), (e1, e2)
-    N1 = M1/el_to_mass[e1]
-    N2 = M2/el_to_mass[e2]
-    sol1 = el_to_solar[e1]
-    sol2 = el_to_solar[e2]
-    return np.log10(N1) - np.log10(N2) - sol1 + sol2
-
 ### Utility functions for MDF
-def _findBin(x,xRange):
-    ind = 0
-    n = len(xRange)
-    if x > xRange[0]:
-        while ind < n and xRange[ind] < x :
-            ind += 1
-    return ind
-def _areaUnderCurve(y,x,a,b):
-    aIndex = _findBin(a,x)
-    bIndex = _findBin(b,x)
-    return np.trapz(y[aIndex:bIndex+1],x[aIndex:bIndex+1])
-
-def compute_mdf(g, Fe_H_min=-6.0, Fe_H_max=1.0, d_Fe_H=0.05):
-    def get_Fe_H(inst):
-        # Find the Fe index
-        i_Fe = inst.history.elements.index('Fe')
-        # Define the age and Fe_H array
-        age = []
-        Fe_H = []
-        m_locked = []
-        # For each timestep ..
-        for i_t in range(inst.nb_timesteps):
-            # If there are metals ..
-            if inst.ymgal[i_t][2] > 0.0:
-                # Calculate the metallicity 
-                m_Fe_H_ratio = inst.history.ism_elem_yield[i_t][i_Fe] / inst.history.ism_elem_yield[i_t][0]
-                Fe_H.append( np.log10(m_Fe_H_ratio) - np.log10((10**(7.50-12))*56.0) )
-                # Copy the m_locked and age
-                age.append(inst.history.age[i_t])
-                m_locked.append(inst.history.m_locked[i_t])
-        return age, Fe_H, m_locked    
+def normalize_distribution(x,y):
+    def _findBin(x,xRange):
+        """ Find which bin x is in"""
+        ind = 0
+        n = len(xRange)
+        if x > xRange[0]:
+            while ind < n and xRange[ind] < x :
+                ind += 1
+        return ind
+    def _areaUnderCurve(y,x,a,b):
+        """ Use to normalize distributions """
+        aIndex = _findBin(a,x)
+        bIndex = _findBin(b,x)
+        return np.trapz(y[aIndex:bIndex+1],x[aIndex:bIndex+1])
+    x_min = np.min(x)
+    d_x = np.max(np.diff(x))
+    x_max = np.max(x)+d_x
+    y_norm = y/_areaUnderCurve(y,x,x_min,x_max)
+    return y_norm
     
-    nb_Fe_H = int((Fe_H_max - Fe_H_min) / d_Fe_H) + 1
-    mdf_x = np.zeros(nb_Fe_H)
-    mdf_y = np.zeros(nb_Fe_H)
-    for i_Fe in range(nb_Fe_H):
-        mdf_x[i_Fe] = Fe_H_min + i_Fe * d_Fe_H
-    # Create the MDF array of all galaxies
-    mdf_inst = []
-    for i_zz in range(len(g.redshifts)):
-        mdf_inst.append([])
-        for i_br in range(len(g.br_age[i_zz])):
-            mdf_inst[i_zz].append(np.zeros(nb_Fe_H))
-    # Return the [Fe/H] value
-    # For all progenitor galaxies ..
-    for i_zz in range(len(g.redshifts)):
-        for i_br in range(len(g.galaxy_inst[i_zz])):
-    
-            # Verify if the galaxy formed stars ..
-            go_for_it = False
-            if len(g.br_is_SF) == 0:
-                go_for_it = True
-            elif g.br_is_SF[i_zz][i_br]:
-                go_for_it = True
-            if go_for_it:
-                
-                # Copy the galaxy instance
-                inst = g.galaxy_inst[i_zz][i_br].inner
-    
-                # Get the Age - [Fe/H] relation and the stellar mass formed
-                age, Fe_H, m_locked = get_Fe_H(inst)
-    
-                # For each timestep ..
-                for i_t in range(len(age)-1):
-    
-                    if not np.isnan(Fe_H[i_t]) and not np.isnan(Fe_H[i_t+1]) and \
-                       not np.isinf(Fe_H[i_t]) and not np.isinf(Fe_H[i_t+1]) and \
-                        m_locked[i_t] > 0.0:
-    
-                        # Calculate the star formation rate for this timestep
-                        sfr_inst = m_locked[i_t] / (age[i_t+1] - age[i_t])
-                            
-                        # If we do not need to interpolate ..
-                        if Fe_H[i_t+1] == Fe_H[i_t]:
-                            
-                            # Find the lower MDF_x boundary
-                            i_low = 0
-                            while mdf_x[i_low+1] < Fe_H[i_t]:
-                                i_low += 1
-    
-                            # Add the stellar mass in the MDF bin
-                            mdf_inst[i_zz][i_br][i_low] += sfr_inst * (age[i_t+1] - age[i_t])
-    
-                            # Go to the next MDF bin
-                            i_low += 1
-    
-                        # If we need to interpolate
-                        else:
-                            
-                            # Calculate the interpolation coefficients
-                            # t = a * [Fe/H] + b
-                            aa = (age[i_t+1] - age[i_t]) / (Fe_H[i_t+1] - Fe_H[i_t])
-                            bb = age[i_t] - aa * Fe_H[i_t]
-    
-                            # Calculate the maximum and minimum  Fe_H values
-                            # So it doesn't matter when [Fe/H] is increasing or decreasing
-                            min_Fe_inst = min(Fe_H[i_t], Fe_H[i_t+1])
-                            max_Fe_inst = max(Fe_H[i_t], Fe_H[i_t+1])
-    
-                            # Find the lower MDF_x boundary
-                            i_low = 0
-                            while mdf_x[i_low+1] < min_Fe_inst:
-                                i_low += 1
-    
-                            # While some MDF bins still need to be treated ..
-                            while mdf_x[i_low] < max_Fe_inst:
-    
-                                # Get the lower and upper [Fe/H] boundaries covered
-                                # by the OMEGA timesteps within the currend MDF bin
-                                Fe_low = max(mdf_x[i_low], min_Fe_inst)
-                                Fe_up = min(mdf_x[i_low+1], max_Fe_inst)
-    
-                                # Calculate the OMEGA time interval spent on the current MDF bin
-                                t_low = aa * Fe_low + bb
-                                t_up = aa * Fe_up + bb
-                                dt_spent = abs(t_up - t_low)
-    
-                                # Add the stellar mass in the MDF bin
-                                mdf_inst[i_zz][i_br][i_low] += sfr_inst * dt_spent
-    
-                                # Go to the next MDF bin
-                                i_low += 1
-    # Sum all MDFs
-    mdf_all = np.zeros(nb_Fe_H)
-    for i_zz in range(len(g.redshifts)):
-        for i_br in range(len(g.galaxy_inst[i_zz])):
-            mdf_all += mdf_inst[i_zz][i_br]
-    mdf_all_norm = mdf_all/_areaUnderCurve(mdf_all,mdf_x,Fe_H_min,Fe_H_max)
-    
-    return mdf_x, mdf_all_norm
-
-def convolve_mdf(mdf_x, mdf_all, sigma_gauss):
-    Fe_H_min = np.min(mdf_x)
-    d_Fe_H = np.max(np.diff(mdf_x))
-    Fe_H_max = np.max(mdf_x)+d_Fe_H
+def convolve_gauss(x, y, sigma_gauss):
+    """
+    Simple convolution to smooth a distribution
+    This can probably be replaced with scipy or numpy
+    """
     # Convolve with Gaussian
-    mdf_all_gauss = np.zeros(len(mdf_x))
-    for i_x in range(len(mdf_x)):
-        for i_x_scan in range(len(mdf_x)):
-            mdf_all_gauss[i_x_scan] += mdf_all[i_x]*np.exp((-1*(mdf_x[i_x_scan] - mdf_x[i_x])**2) / (2.0*sigma_gauss**2))
-    mdf_all_gauss_norm = mdf_all_gauss/_areaUnderCurve(mdf_all_gauss,mdf_x,Fe_H_min,Fe_H_max)
-    return mdf_all_gauss_norm
+    y_gauss = np.zeros(len(x))
+    for i_x in range(len(x)):
+        for i_x_scan in range(len(x)):
+            y_gauss[i_x_scan] += y[i_x]*np.exp((-1*(x[i_x_scan] - x[i_x])**2) / (2.0*sigma_gauss**2))
+    y_gauss_norm = normalize_distribution(x,y_gauss)
+    return y_gauss_norm
+
+def find_distribution_percentile(x,y,p):
+    """
+    Given a PDF x,y find the CDF and linearly interpolate to find where the percentile is p
+    """
+    ycum = y.cumsum()
+    raise NotImplementedError
+def find_distribution_median(x,y):
+    return find_distribution_percentile(x,y,0.5)

@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
-from . import caga
+from . import caga, calc
 
 __all__ = ["mass_history","metallicity_evolution"]
 
@@ -155,20 +155,20 @@ def mstar_evolution(g, reduction_factor=1.0):
     Plot total mstar(z)
     """
     # saving history of total stellar mass
-    mstar_hist = np.zeros(len(g.redshifts))
-    
-    # For each star-forming branch ..
-    mstar_tot = 0
-    for i_z in range(len(g.redshifts)):
-        for i_b in range(len(g.br_halo_ID[i_z])):
-            if g.br_is_SF[i_z][i_b]:
-                
-                # Copy the OMEGA (star-forming) calculation
-                o = g.galaxy_inst[i_z][i_b].inner
-                
-                mstar_tot += sum(o.history.m_locked)
-        
-        mstar_hist[i_z] = mstar_tot
+    mstar_hist = calc.mstar_evolution(g)
+    #
+    ## For each star-forming branch ..
+    #mstar_tot = 0
+    #for i_z in range(len(g.redshifts)):
+    #    for i_b in range(len(g.br_halo_ID[i_z])):
+    #        if g.br_is_SF[i_z][i_b]:
+    #            
+    #            # Copy the OMEGA (star-forming) calculation
+    #            o = g.galaxy_inst[i_z][i_b].inner
+    #            
+    #            mstar_tot += sum(o.history.m_locked)
+    #    
+    #    mstar_hist[i_z] = mstar_tot
     
     # Set figure frame and font properties
     fig = plt.figure(figsize=(6,4))
@@ -183,8 +183,8 @@ def mstar_evolution(g, reduction_factor=1.0):
 def metallicity_distribution(g, sigma_gauss=0.1,
                              Fe_H_min=-6.0, Fe_H_max=1.0, d_Fe_H=0.05):
     fig = plt.figure(figsize=(6,4))
-    mdf_x, mdf_all_norm = caga.compute_mdf(g, Fe_H_min=Fe_H_min, Fe_H_max=Fe_H_max, d_Fe_H=d_Fe_H)
-    mdf_all_gauss_norm = caga.convolve_mdf(mdf_x, mdf_all_norm, sigma_gauss)
+    mdf_x, mdf_all_norm = calc.mdf(g, Fe_H_min=Fe_H_min, Fe_H_max=Fe_H_max, d_Fe_H=d_Fe_H)
+    mdf_all_gauss_norm = caga.convolve_gauss(mdf_x, mdf_all_norm, sigma_gauss)
     plt.plot(mdf_x,mdf_all_norm, label="Raw MDF")
     plt.plot(mdf_x,mdf_all_gauss_norm, label="Smoothed MDF")
     plt.xlim(-3,0.5)
