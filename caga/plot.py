@@ -181,14 +181,18 @@ def mstar_evolution(g, reduction_factor=1.0):
     return fig, (g.redshifts, mstar_hist)
 
 def metallicity_distribution(g, sigma_gauss=0.1,
-                             Fe_H_min=-6.0, Fe_H_max=1.0, d_Fe_H=0.05):
+                             Fe_H_min=-6.0, Fe_H_max=1.0, d_Fe_H=0.05, 
+                             plotxLow=-3, plotxHigh=0.5,logScale=False,
+                             plotyLow=None, plotyHigh=None):
     fig = plt.figure(figsize=(6,4))
     mdf_x, mdf_all_norm = calc.mdf(g, Fe_H_min=Fe_H_min, Fe_H_max=Fe_H_max, d_Fe_H=d_Fe_H)
     mdf_all_gauss_norm = caga.convolve_gauss(mdf_x, mdf_all_norm, sigma_gauss)
     plt.plot(mdf_x,mdf_all_norm, label="Raw MDF")
     plt.plot(mdf_x,mdf_all_gauss_norm, label="Smoothed MDF")
-    plt.xlim(-3,0.5)
-    #plt.gca().set_yscale('log')
+    plt.xlim(plotxLow,plotxHigh)
+    plt.ylim(plotyLow,plotyHigh)
+    if logScale:
+        plt.gca().set_yscale('log')
     matplotlib.rcParams.update({'font.size': 14.0})
     plt.xlabel('[Fe/H]', fontsize=14)
     plt.ylabel('MDF', fontsize=14)
