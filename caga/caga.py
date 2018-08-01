@@ -231,4 +231,23 @@ def find_distribution_percentile(x,y,p):
     return np.array(output)
     
 def find_distribution_median(x,y):
-    return find_distribution_percentile(x,y,0.5)
+    return find_distribution_percentile(x,y,0.5)[0]
+
+def get_xmid(x):
+    assert np.all(np.diff(x) > 0), np.diff(x)
+    dx = np.max(np.diff(x))
+    xall = np.array(list(x)+[x[-1]+dx])
+    return (xall[1:]+xall[:-1])/2.
+
+def find_distribution_mean(x,y):
+    assert len(x) == len(y)
+    xmid = get_xmid(x)
+    ynorm = y.sum()
+    return np.sum(xmid*y/ynorm)
+
+def find_distribution_std(x,y):
+    E_X = find_distribution_mean(x,y)
+    xmid = get_xmid(x)
+    ynorm = y.sum()
+    E_X2 = np.sum(xmid*xmid*y/ynorm)
+    return np.sqrt(E_X2 - E_X**2)
