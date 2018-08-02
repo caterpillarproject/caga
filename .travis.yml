@@ -1,0 +1,39 @@
+sudo: required
+language: python
+python:
+  - 3.6
+before_install:
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  # So that we can use matplotlib on Travis.
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+install:
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib nose coverage
+  - pip install runipy
+  - python setup.py install
+script:
+  - export SYGMADIR=../
+  - export PYTHONPATH=$PYTHONPATH:$SYGMADIR
+#  - python -m regression_tests.selftest
+#  - cd regression_tests
+#  - bash run_notebooks.sh
+#  - python -m regression_tests/setup_notebooks.py
+#  - runipy regression_tests/SYGMA_SSP_h_yield_input.ipynb True
+#  - runipy regression_tests/Plotting_functions.ipynb True
+#  - runipy regression_tests/Stellab_tests.ipynb
+after_success:
+  coveralls
+notifications:
+  slack: 
+    rooms:
+      secure: "VTRYu0O6H4L3enOjsJBPI4OPL1mC6LekSJaK0xiUjp+Qs0C1WFvK05gNDvi61KwBiaCRaVlwF2NPuefYO3cu8Fe+WP2ou4hbM0b/VllsYm1SH6ru5OlFz0cipZQxkSlTbi6oUO2kNh5V2I1hALHve8DHTgC0H+7xpfE39K2QZWHwr6w+0QNnnA3pVaWP8Bnsm/C/QMwr0ihEe3FIAbNeSun9ViN/M0j+C6d6kKVbvNPeJaPV0tG+ZnGJpBYHEFYhOlNdA5hSCp6XajVoMDvywXL+CalLpZlCXOfMF3JuWLSp/RVu6o0O+5nJZw6oYdsu+cVXSdl06tgjk0YT3neRY8bsVg5LR947sfBV3XhpMCnh7XpaOYWgFJT+kKvcl5nGhSbY+flLv0oC6iAwkYOjiN6AqK9QFuN/m/3g/zhmSNL+55ht9T80cqhbuNlsOtgsQA186ErwbXUeMkNO7x0T7Q2jQrIfM6C2OOXb0E+bItzX62AYbTUiXhECPA3sGOj7s4D7xjK0UJwe7izeazKNRV0n5GdRbcOJgZ+L420lMN5EaazKY8HOX1E5ePBM1RRpTiUzFMVZXQTqpDmq0tXgX25ell8hfyGeA95Igf0s2SuOsCvxfZe/YAl+3gfn9SgFE8937RdLEd4KEE5eszIcjtP/JBtJBxRPzceHfgB+USc="
+  email: false
