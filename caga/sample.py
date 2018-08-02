@@ -9,10 +9,33 @@ from . import caga, calc
 
 default_elems = ["C","N","O","Na","Mg","Si","Ca","Ti","Mn","Fe","Co","Ni","Zn","Sr","Ba","Eu"]
 
+def sample_gamma(g, Nsample, elems=default_elems, convert_to_XH=True):
+    """
+    Take a GAMMA tree and sample stars from chemical evolution track from an omega run and sample stars along it.
+    """
+    ## Create output array.
+    ## Add 2 extra indices for i_z and i_b
+    Ncols = 1+len(elems) + 2
+    
+    ## Create total mass array and find total mass
+    mstar_tot = 0.
+    br_mstar_total = [[] for i_z in range(len(g.redshifts))]
+    for i_z in range(len(g.redshifts)):
+        for i_b in range(len(g.br_halo_ID[i_z])):
+            if g.br_is_SF[i_z][i_b]: # only sample from star forming branches
+                o = g.galaxy_inst[i_z][i_b].inner
+                mstar = np.sum(o.history.m_locked)
+                mstar_tot += mstar
+                br_mstar_total[i_z].append(mstar)
+            else:
+                br_mstar_total[i_z].append(0.)
+    
+    ## Find the number of stars to sample on each branch
+    br_N_stars = [[Nsample*mstar/mstar_tot for mstar in b_mstar] for b_mstar in br_mstar_total]
+    
 def sample_omega(om, Nsample, t0=0.0, elems=default_elems, convert_to_XH=True):
     """
     Take the chemical evolution track from an omega run and sample stars along it.
-    Output is Nsample x N_values_to_sample array
     Default output columns:
       t_form, element mass ratios (M_X/M_H) for C, N, O, Na, Mg, Si, Ca, Ti, Mn, Fe, Co, Ni, Zn, Sr, Ba, Eu
     
