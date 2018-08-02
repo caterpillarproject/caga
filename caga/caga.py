@@ -59,6 +59,15 @@ def mass_to_spectro(M1,M2,e1,e2):
     sol2 = el_to_solar[e2]
     return np.log10(N1) - np.log10(N2) - sol1 + sol2
 
+def mass_fraction_to_spectro(MH,el):
+    """
+    Given mass ratio M/H for element el, compute [X/H]
+    """
+    assert (el in el_to_mass) and (el in el_to_solar), el
+    NH = MH/el_to_mass[el]
+    solar = el_to_solar[el]
+    return np.log10(NH) - solar + 12
+
 class gamma_tree(object):
     """
     A class that just stores the output of GAMMA merger tree data
