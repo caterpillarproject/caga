@@ -34,7 +34,7 @@ def root_FeH_medscat(g,p=[.16,.5,.84]):
     """ Convenience function to compute MDF and find medscat """
     x,y=mdf(g)
     return caga.find_distribution_percentile(x,y,p)
-def mdf(g, Fe_H_min=-6.0, Fe_H_max=1.0, d_Fe_H=0.05):
+def mdf(g, Fe_H_min=-6.0, Fe_H_max=2.0, d_Fe_H=0.05):
     """
     Loop through GAMMA tree to find the total metallicity distribution function
     """
@@ -156,4 +156,26 @@ def mdf(g, Fe_H_min=-6.0, Fe_H_max=1.0, d_Fe_H=0.05):
     
     return mdf_x, mdf_all_norm
 
+def mdf_accreted(g_destroyed, Fe_H_min=-6.0, Fe_H_max=2.0, d_Fe_H=0.05, sigma_gauss=0.1):
+    """ Creates the MDF of the stellar halo from all destroyed halos """
+    # g_destroyed = array of gamma objects, one for each destroyed halo
 
+    n_destroyed = len(g_destroyed)
+
+    mdf_x, _ = mdf(g_destroyed[0], Fe_H_min, Fe_H_max, d_Fe_H)
+    m = len(mdf_x)
+
+    indivMDFs = np.zeros((n_destroyed,m))
+    totalMDF = np.zeros(m)
+
+    for i in range(0,n_destroyed):
+        mstar_hist = mstar_evolution(g_destroyed[i])
+        if mstar_hist[-1] != 0:
+            _, mdf_all_norm = mdf(g_destroyed[i], Fe_H_min, Fe_H_max, d_Fe_H)
+            mdf_smooth = caga.convolve_gauss(mdf_x, mdf_all_norm, sigma_gauss)
+            indivMDFs[i] = mdf_smooth
+            totalMDF += mdf_smooth*mstar_hist[-1]
+        
+    totalMDF = caga.normalize_distribution(mdf_x,totalMDF)
+
+    return mdf_x, totalMDF
