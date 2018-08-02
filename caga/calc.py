@@ -7,19 +7,6 @@ Operations on gamma trees
 import numpy as np
 from . import caga
 
-def get_root_ZH(g):
-    """
-    """
-def get_root_FeH(g):
-    """
-    """
-def get_root_FeH_distr(g):
-    """
-    """
-def get_root_Mpeak(g):
-    """
-    """
-
 def root_mstar(g):
     return mstar_evolution(g)[0]
 def mstar_evolution(g):
@@ -37,6 +24,16 @@ def mstar_evolution(g):
         mstar_hist[i_z] = mstar_tot
     return mstar_hist
 
+def root_FeH_mean(g):
+    """ Convenience function to compute MDF and find mean """
+    return caga.find_distribution_mean(*mdf(g))
+def root_FeH_std(g):
+    """ Convenience function to compute MDF and find stdev """
+    return caga.find_distribution_std(*mdf(g))
+def root_FeH_medscat(g,p=[.16,.5,.84]):
+    """ Convenience function to compute MDF and find medscat """
+    x,y=mdf(g)
+    return caga.find_distribution_percentile(x,y,p)
 def mdf(g, Fe_H_min=-6.0, Fe_H_max=1.0, d_Fe_H=0.05):
     """
     Loop through GAMMA tree to find the total metallicity distribution function

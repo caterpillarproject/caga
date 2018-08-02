@@ -150,10 +150,11 @@ def br_is_SF_thresh(gt, m_vir_thresh=0.):
                 br_is_SF[i_z].append(False)
     return br_is_SF
 
-def generate_kwargs(gt, m_vir_thresh):
+def generate_kwargs(gt, m_vir_thresh, SSPs_in=None):
     kwargs = gt.kwargs
     br_is_SF = br_is_SF_thresh(gt, m_vir_thresh)
-    SSPs_in = precompute_ssps()
+    if SSPs_in is None:
+        SSPs_in = precompute_ssps()
     kwargs.update({"br_is_SF":br_is_SF,
                    "pre_calculate_SSPs":True,
                    "SSPs_in":SSPs_in})
@@ -217,7 +218,7 @@ def get_cdf(x,y, return_arrays=False, **kwargs):
     if return_arrays:
         return cdf, xcum, ycum
     return cdf
-    
+
 def find_distribution_percentile(x,y,p):
     """
     Given a PDF x,y find the CDF and linearly interpolate to find where the percentile is p.
@@ -229,7 +230,7 @@ def find_distribution_percentile(x,y,p):
     p_guess = [xcum[np.argmin(np.abs(ycum-p_))] for p_ in p]
     output = [optimize.brentq(lambda x: cdf(x)-p_, xcum[0], xcum[-1], xtol=1e-4) for p_ in p]
     return np.array(output)
-    
+
 def find_distribution_median(x,y):
     return find_distribution_percentile(x,y,0.5)[0]
 
