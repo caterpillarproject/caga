@@ -17,3 +17,6 @@ Developers:
 
 ## Examples
 See jupyter notebooks in `notebooks` directory.
+These notebooks are run as tests on travis-ci.
+
+[![Build Status](https://travis-ci.org/caterpillarproject/caga.svg?branch=master)](https://travis-ci.org/caterpillarproject/caga)
