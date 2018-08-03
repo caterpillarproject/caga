@@ -133,12 +133,50 @@ class gamma_tree(object):
         """ Create a plot with the mass history """
         return plot.mass_history(self)
         
-def precompute_ssps():
+def precompute_ssps(main_table="nugrid", sn1a_table="I99", pop3_table="HW10", **kwargs):
     """
     Pre-calculate the ejecta of simple stellar populations.
     You can ignore the warning.
+    
+    agb/massive stars (main_table):
+      K10K06: Karakas10/Kobayashi06, no hypernovae
+      nuK06b: nugrid/Kobayashi06
+      nuN13: nugrid/Nomoto13
+      K10nu: Karakas10/nugrid
+      nugrid (OMEGA default): nugrid_MESAonly_fryer12delay
+    
+    sn1a (sn1a_table):
+      I99 (default): Iwamoto et al. 1999, W7
+
+    pop3 (pop3_table):
+      HW10 (default): Heger+Woosley 2010
+      N13: Nomoto+2013
+    
+    All other kwargs are passed to omega (e.g. ns_merger_on)
     """
-    o_for_SSPs = omega.omega(special_timesteps=2, pre_calculate_SSPs=True)
+    ## Get file names of yield tables based on shortened keys, making things more consistent
+    main_dict = {
+        "K10K06":"agb_and_massive_stars_K10_K06_0.0HNe.txt",
+        "nuK06":"agb_and_massive_stars_nugrid_K06.txt",
+        "nuN13":"agb_and_massive_stars_nugrid_N13.txt",
+        "K10nu":"agb_and_massive_stars_nugrid_K10.txt",
+        "nugrid":"agb_and_massive_stars_nugrid_MESAonly_fryer12delay.txt",
+        "C15K06":"agb_and_massive_stars_FRUITY_K06.txt",
+    }
+    main_table = "yield_tables/"+main_dict[main_table]
+    sn1a_dict = {
+        "I99":"sn1a_i99_W7.txt",
+    }
+    sn1a_table = "yield_tables/"+sn1a_dict[sn1a_table]
+    pop3_dict = {
+        "HW10":"popIII_heger10.txt",
+        "N13":"popIII_N13.txt",
+    }
+    pop3_table = "yield_tables/"+pop3_dict[pop3_table]
+    
+    o_for_SSPs = omega.omega(special_timesteps=2, pre_calculate_SSPs=True,
+                             table=main_table, sn1a_table=sn1a_table, pop3_table=pop3_table,
+                             **kwargs)
     # Copy the SSPs array
     SSPs_in = [o_for_SSPs.ej_SSP, o_for_SSPs.ej_SSP_coef, o_for_SSPs.dt_ssp, o_for_SSPs.t_ssp]
     return SSPs_in
