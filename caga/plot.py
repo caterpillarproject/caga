@@ -8,6 +8,37 @@ from . import caga, calc
 
 __all__ = ["mass_history","metallicity_evolution"]
 
+def contour(x, y, percentiles=[5,25,50,75,95], Hmin=0, ax=None, **kwargs):
+    """
+    Make contour plot from x and y arrays.
+    """
+    ## Pull out kwargs relevant for hist2d
+    ## Other kwargs are passed to contour
+    hist2d_kwargs = {}
+    hist2d_kwarg_names = ["bins", "range", "normed", "weights"]
+    keys = list(kwargs.keys())
+    for k in keys:
+        if k in hist2d_kwarg_names:
+            hist2d_kwargs[k] = kwargs.pop(k)
+
+    ## Compute histogram
+    H, xe, ye = np.histogram2d(x,y,**hist2d_kwargs)
+    
+    ## Auto-compute levels
+    if "levels" in kwargs:
+        levels = kwargs.pop("levels")
+        print("Warning: overwriting percentiles")
+    else:
+        levels = np.percentile(H[H>Hmin],percentiles)
+
+    ## Get figure/axis
+    if ax is None: fig, ax = plt.subplots(figsize=(6,4))
+    else: fig = ax.figure
+    ## Make contour plot
+    ax.contour(H.T, extent=[xe.min(),xe.max(),ye.min(),ye.max()], levels=levels, **kwargs)
+    
+    return fig
+
 def mass_history(gamtree):
     """
     Plot halo mass of a gamma tree, colored by branch
@@ -198,3 +229,4 @@ def metallicity_distribution(g, sigma_gauss=0.1,
     plt.ylabel('MDF', fontsize=14)
     
     return fig, (mdf_x, mdf_all_norm, mdf_all_gauss_norm)
+
