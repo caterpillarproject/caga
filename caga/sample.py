@@ -8,7 +8,8 @@ import numpy as np
 import itertools
 from . import caga, calc
 
-default_elems = ["C","N","O","Na","Mg","Si","Ca","Ti","Mn","Fe","Co","Ni","Zn","Sr","Ba","Eu"]
+#default_elems = ["C","N","O","Na","Mg","Si","Ca","Ti","Mn","Fe","Co","Ni","Zn","Sr","Ba","Eu"]
+default_elems = ["C","N","O","Na","Mg","Si","Ca","Ti","Mn","Fe","Co","Ni","Zn"]
 
 def sample_gamma(g, Nsample, elems=default_elems, convert_to_XH=True):
     """

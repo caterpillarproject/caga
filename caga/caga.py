@@ -133,14 +133,16 @@ class gamma_tree(object):
         """ Create a plot with the mass history """
         return plot.mass_history(self)
         
-def precompute_ssps(main_table="nugrid", sn1a_table="I99", pop3_table="HW10", **kwargs):
+def precompute_ssps(main_table="K10K06", sn1a_table="I99", pop3_table="HW10", **kwargs):
     """
     Pre-calculate the ejecta of simple stellar populations.
     You can ignore the warning.
+
+    Returns SSPs_in, kwargs (kwargs has to be passed to GAMMA run: see caga.generate_kwargs)
     
     agb/massive stars (main_table):
-      K10K06: Karakas10/Kobayashi06, no hypernovae
-      nuK06b: nugrid/Kobayashi06
+      K10K06 (default): Karakas10/Kobayashi06, no hypernovae
+      nuK06: nugrid/Kobayashi06
       nuN13: nugrid/Nomoto13
       K10nu: Karakas10/nugrid
       nugrid (OMEGA default): nugrid_MESAonly_fryer12delay
@@ -174,12 +176,15 @@ def precompute_ssps(main_table="nugrid", sn1a_table="I99", pop3_table="HW10", **
     }
     pop3_table = "yield_tables/"+pop3_dict[pop3_table]
     
+    table_kwargs = {"table":main_table, "sn1a_table":sn1a_table, "pop3_table":pop3_table}
+    kwargs.update(table_kwargs)
+
     o_for_SSPs = omega.omega(special_timesteps=2, pre_calculate_SSPs=True,
-                             table=main_table, sn1a_table=sn1a_table, pop3_table=pop3_table,
                              **kwargs)
     # Copy the SSPs array
     SSPs_in = [o_for_SSPs.ej_SSP, o_for_SSPs.ej_SSP_coef, o_for_SSPs.dt_ssp, o_for_SSPs.t_ssp]
-    return SSPs_in
+    # Return both the SSPs array and the kwargs used to compute this, for passing into GAMMA
+    return SSPs_in, kwargs
     
 def br_is_SF_thresh(gt, m_vir_thresh=0.):
     """
@@ -197,14 +202,41 @@ def br_is_SF_thresh(gt, m_vir_thresh=0.):
                 br_is_SF[i_z].append(False)
     return br_is_SF
 
-def generate_kwargs(gt, m_vir_thresh, SSPs_in=None):
+def generate_kwargs(gt, m_vir_thresh, SSPs_in=None, SSP_kwargs={}, **extra_kwargs):
+    """
+    Generate kwargs for a GAMMA run.
+    
+    Example usage:
+        ## Generate tree and SSP input to GAMMA
+        gt = caga.gamma_tree.load("my_gamma_tree.npy")
+        mvir_thresh = 1e7
+        SSPs_in = caga.precompute_ssps(main_table="K10K06",
+                                       imf_yields_range=[1,50],
+                                       nb_1a_per_m=1e-3)
+        kwargs = caga.generate_kwargs(gt, mvir_thresh, SSPs_in=SSPs_in)
+        ## Change any parameters you think are important
+        kwargs["sfe"] = 0.005
+        ## Run GAMMA
+        g = gamma.gamma(**kwargs)
+        
+        Note that the output of caga.generate_kwargs is actually a two-length tuple of (SSPs_in, table_kwargs).
+        But for convenience, you can pass the whole tuple to SSPs_in for this function.
+    """
     kwargs = gt.kwargs
     br_is_SF = br_is_SF_thresh(gt, m_vir_thresh)
+    ## add 
     if SSPs_in is None:
-        SSPs_in = precompute_ssps()
+        SSPs_in, SSP_kwargs = precompute_ssps()
+    elif SSP_kwargs == {}:
+        ## convenience to be able to just get a single variable out of precompute_ssps
+        ## will throw an error if only a single thing is passed in
+        SSPs_in, SSP_kwargs = SSPs_in
     kwargs.update({"br_is_SF":br_is_SF,
                    "pre_calculate_SSPs":True,
                    "SSPs_in":SSPs_in})
+    kwargs.update(SSP_kwargs)
+    ## Add anything else
+    kwargs.update(extra_kwargs)
     return kwargs
 
 def plot_lumfn(Mstars,MoverL=2.0):
