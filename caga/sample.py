@@ -1,10 +1,11 @@
 from __future__ import absolute_import, division
 
 """
-Tools to take samples from chemical evolution tracks
+Tools to take stellar population samples from chemical evolution tracks
 """
 
 import numpy as np
+import itertools
 from . import caga, calc
 
 default_elems = ["C","N","O","Na","Mg","Si","Ca","Ti","Mn","Fe","Co","Ni","Zn","Sr","Ba","Eu"]
@@ -12,26 +13,46 @@ default_elems = ["C","N","O","Na","Mg","Si","Ca","Ti","Mn","Fe","Co","Ni","Zn","
 def sample_gamma(g, Nsample, elems=default_elems, convert_to_XH=True):
     """
     Take a GAMMA tree and sample stars from chemical evolution track from an omega run and sample stars along it.
+    Require a minimum of 1 star per branch, so will not get back an array of length Nsample.
     """
     ## Create output array.
     ## Add 2 extra indices for i_z and i_b
     Ncols = 1+len(elems) + 2
     
-    ## Create total mass array and find total mass
+    ## Create mass in each branch and find total mass
     mstar_tot = 0.
-    br_mstar_total = [[] for i_z in range(len(g.redshifts))]
+    br_mstar = [[] for i_z in range(len(g.redshifts))]
     for i_z in range(len(g.redshifts)):
         for i_b in range(len(g.br_halo_ID[i_z])):
             if g.br_is_SF[i_z][i_b]: # only sample from star forming branches
                 o = g.galaxy_inst[i_z][i_b].inner
                 mstar = np.sum(o.history.m_locked)
                 mstar_tot += mstar
-                br_mstar_total[i_z].append(mstar)
+                br_mstar[i_z].append(mstar)
             else:
-                br_mstar_total[i_z].append(0.)
+                br_mstar[i_z].append(0.)
     
     ## Find the number of stars to sample on each branch
-    br_N_stars = [[Nsample*mstar/mstar_tot for mstar in b_mstar] for b_mstar in br_mstar_total]
+    br_N_stars = [[max(int(round(Nsample*mstar/mstar_tot,0)),1) for mstar in z_mstar] for z_mstar in br_mstar]
+    total_N_stars = np.sum(list(itertools.chain(*br_N_stars)))
+    ## TODO: What to do if Nsample is not high enough?
+    output = np.zeros((total_N_stars, Ncols))
+    
+    all_samples = []
+    all_iz = []
+    all_ib = []
+    for i_z in range(len(g.redshifts)):
+        for i_b in range(len(g.br_halo_ID[i_z])):
+            N_stars = br_N_stars[i_z][i_b]
+            o = g.galaxy_inst[i_z][i_b].inner
+            samples = sample_omega(o, N_stars, t0=g.times[i_z], elems=elems, convert_to_XH=convert_to_XH)
+            all_samples.append(samples)
+            all_iz += [i_z]*N_stars
+            all_ib += [i_b]*N_stars
+    np.concatenate(all_samples,out=output[:,0:-2])
+    output[:,-2] = all_iz
+    output[:,-1] = all_ib
+    return output
     
 def sample_omega(om, Nsample, t0=0.0, elems=default_elems, convert_to_XH=True):
     """
@@ -92,6 +113,10 @@ def fill_nonfinite(x, val):
     x = x.copy()
     x[~np.isfinite(x)] = val
     return x
+
+def drop_nonfinite(x):
+    """ Take an array x and keep finite """
+    return x[np.isfinite(x)]
 
 def sample_pmf(pmf, N):
     """ Get N indices from the given PMF """
