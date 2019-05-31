@@ -41,6 +41,7 @@ def mdf(g, Fe_H_min=-6.0, Fe_H_max=2.0, d_Fe_H=0.05):
     def get_Fe_H(inst):
         # Find the Fe index
         i_Fe = inst.history.elements.index('Fe')
+        i_H = inst.history.elements.index('H')
         # Define the age and Fe_H array
         age = []
         Fe_H = []
@@ -48,9 +49,9 @@ def mdf(g, Fe_H_min=-6.0, Fe_H_max=2.0, d_Fe_H=0.05):
         # For each timestep ..
         for i_t in range(inst.nb_timesteps):
             # If there are metals ..
-            if inst.ymgal[i_t][2] > 0.0:
+            if inst.history.ism_elem_yield[i_t][i_Fe] > 0.0:
                 # Calculate the metallicity 
-                m_Fe_H_ratio = inst.history.ism_elem_yield[i_t][i_Fe] / inst.history.ism_elem_yield[i_t][0]
+                m_Fe_H_ratio = inst.history.ism_elem_yield[i_t][i_Fe] / inst.history.ism_elem_yield[i_t][i_H]
                 Fe_H.append( np.log10(m_Fe_H_ratio) - np.log10((10**(7.50-12))*56.0) )
                 # Copy the m_locked and age
                 age.append(inst.history.age[i_t])
