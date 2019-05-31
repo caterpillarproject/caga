@@ -20,7 +20,7 @@ before_install:
   - ls
 install:
   # Install anaconda basics
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib nose coverage
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION numpy=1.16.1 scipy matplotlib nose coverage
   - pip install runipy
   # Download NuPyCEE/JINAPyCEE. Using Alex's versions as the official branches get modified for development more often
   - wget https://github.com/alexji/NuPyCEE/archive/master.tar.gz -O NuPyCEE.tar.gz
